@@ -17,7 +17,19 @@ class NoteController extends Controller
      */
     public function index()
     {
-        return new NoteCollection(Note::whereUserId(auth()->id())->latest()->paginate(5), 200);
+        try {
+            $notes = Note::whereUserId(auth()->id())->latest()->paginate(5);
+            return new NoteCollection($notes);
+        } catch (\Throwable $th) {
+            return response()->json(
+                [
+                    'status' => false,
+                    'message' => 'No data found !',
+                    'error' => $th->getMessage()
+                ],
+                500
+            );
+        }
     }
 
     /**
@@ -25,7 +37,19 @@ class NoteController extends Controller
      */
     public function store(NoteRequest $request)
     {
-        return new NoteResource($request->user()->notes()->create($request->all()), 201);
+        try {
+            $note = $request->user()->notes()->create($request->all());
+            return new NoteResource($note);
+        } catch (\Throwable $th) {
+            return response()->json(
+                [
+                    'status' => false,
+                    'message' => 'Note creation failed. Please try again.',
+                    'error' => $th->getMessage()
+                ],
+                500
+            );
+        }
     }
 
     /**
@@ -33,8 +57,19 @@ class NoteController extends Controller
      */
     public function show(Note $note)
     {
-        Gate::authorize('view', $note);
-        return new NoteResource($note, 200);
+        try {
+            Gate::authorize('view', $note);
+            return new NoteResource($note);
+        } catch (\Throwable $th) {
+            return response()->json(
+                [
+                    'status' => false,
+                    'message' => 'No data found !',
+                    'error' => $th->getMessage()
+                ],
+                500
+            );
+        }
     }
 
     /**
@@ -42,9 +77,20 @@ class NoteController extends Controller
      */
     public function update(NoteRequest $request, Note $note)
     {
-        Gate::authorize('update', $note);
-        $note->update($request->all());
-        return new NoteResource($note, 200);
+        try {
+            Gate::authorize('update', $note);
+            $note->update($request->all());
+            return new NoteResource($note);
+        } catch (\Throwable $th) {
+            return response()->json(
+                [
+                    'status' => false,
+                    'message' => 'Note update failed. Please try again.',
+                    'error' => $th->getMessage()
+                ],
+                500
+            );
+        }
     }
 
     /**
@@ -52,8 +98,16 @@ class NoteController extends Controller
      */
     public function destroy(Note $note)
     {
-        Gate::authorize('delete', $note);
-        $note->delete();
-        return new NoteResource($note, 200);
+        try {
+            Gate::authorize('delete', $note);
+            $note->delete();
+            return new NoteResource($note);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Note deletion failed. Please try again.',
+                'error' => $th->getMessage()
+            ], 500);
+        }
     }
 }
